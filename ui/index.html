@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      var savedScheme = localStorage.getItem('agy-cc-color-scheme');
+      if (savedScheme === 'light' || savedScheme === 'dark') {
+        document.querySelector('meta[name="color-scheme"]').content = savedScheme;
+      }
+    } catch (e) {}
+  </script>
+  <title>Antigravity Control Center</title>
+  <style>/*__INLINE_CSS__*/</style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="top-header">
+      <div class="header-main">
+        <div class="title-block">
+          <h1>Antigravity Control Center</h1>
+          <p class="subtitle">Kontrol terpadu untuk Skills, Rules, dan MCP Servers</p>
+        </div>
+        <div class="header-actions">
+          <div id="theme-control" class="theme-control" role="group" aria-label="Tema tampilan">
+            <label class="sr-only" for="theme-select">Tema</label>
+            <select id="theme-select" class="select-control">
+              <option value="system">Sistem</option>
+              <option value="light">Terang</option>
+              <option value="dark">Gelap</option>
+            </select>
+          </div>
+          <button id="refresh-btn" type="button" class="btn btn-secondary">Muat Ulang</button>
+        </div>
+      </div>
+
+      <section class="summary-strip" aria-label="Ringkasan token budget dan status aktif">
+        <div class="budget-card">
+          <div class="budget-row">
+            <span class="budget-label">Skill Token Budget</span>
+            <span id="skill-budget-text" class="budget-value">0 / 20.000 token</span>
+          </div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="20000" aria-valuenow="0" aria-labelledby="skill-budget-text">
+            <div id="skill-budget-fill" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="metric-pills">
+          <div class="metric-item">
+            <span class="metric-label">Skills Aktif</span>
+            <strong id="metric-skills" class="metric-value">0 / 0</strong>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Rules Aktif</span>
+            <strong id="metric-rules" class="metric-value">0 / 0</strong>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">MCP Aktif</span>
+            <strong id="metric-mcp" class="metric-value">0 / 0</strong>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <div id="status-banner" class="status-banner" role="status" aria-live="polite" hidden></div>
+
+    <nav class="tabs-bar" aria-label="Kategori manajemen">
+      <div id="main-tablist" class="tablist" role="tablist" aria-label="Bagian Control Center">
+        <button type="button" role="tab" id="tab-skills" aria-selected="true" tabindex="0" data-panel="panel-skills">Skills</button>
+        <button type="button" role="tab" id="tab-rules" aria-selected="false" tabindex="-1" data-panel="panel-rules">Rules</button>
+        <button type="button" role="tab" id="tab-mcp" aria-selected="false" tabindex="-1" data-panel="panel-mcp">MCP Servers</button>
+        <button type="button" role="tab" id="tab-presets" aria-selected="false" tabindex="-1" data-panel="panel-presets">Presets</button>
+      </div>
+    </nav>
+
+    <main id="main-content">
+      <div id="state-loading" class="state-box" aria-busy="true">
+        <p class="state-title">Memuat konfigurasi Antigravity...</p>
+        <p class="state-desc">Membaca daftar skills, rules, dan MCP servers dari konfigurasi lokal.</p>
+      </div>
+
+      <div id="state-error" class="state-box state-error" hidden>
+        <p class="state-title">Gagal memuat data</p>
+        <p id="error-message" class="state-desc"></p>
+        <button id="error-retry-btn" type="button" class="btn btn-primary">Coba Lagi</button>
+      </div>
+
+      <div id="panels-container" hidden>
+        <section id="panel-skills" role="tabpanel" aria-labelledby="tab-skills" tabindex="0">
+          <div class="panel-inner">
+            <div class="toolbar">
+              <div class="field-group search-group">
+                <label for="skill-search">Cari Skill</label>
+                <input id="skill-search" type="search" class="input-control" placeholder="Nama skill, kategori, atau deskripsi...">
+              </div>
+              <div class="field-group">
+                <label for="skill-status-filter">Status</label>
+                <select id="skill-status-filter" class="select-control">
+                  <option value="all">Semua</option>
+                  <option value="active">Aktif</option>
+                  <option value="disabled">Nonaktif</option>
+                </select>
+              </div>
+              <div class="toolbar-actions">
+                <button id="skills-expand-all" type="button" class="btn btn-secondary">Buka Semua</button>
+                <button id="skills-collapse-all" type="button" class="btn btn-secondary">Tutup Semua</button>
+              </div>
+            </div>
+            <div id="skills-list" class="category-list"></div>
+          </div>
+        </section>
+
+        <section id="panel-rules" role="tabpanel" aria-labelledby="tab-rules" hidden="until-found">
+          <div class="panel-inner">
+            <div class="toolbar">
+              <div class="field-group search-group">
+                <label for="rule-search">Cari Rule</label>
+                <input id="rule-search" type="search" class="input-control" placeholder="Nama file rule atau kategori...">
+              </div>
+              <div class="field-group">
+                <label for="rule-status-filter">Status</label>
+                <select id="rule-status-filter" class="select-control">
+                  <option value="all">Semua</option>
+                  <option value="active">Aktif</option>
+                  <option value="disabled">Nonaktif</option>
+                </select>
+              </div>
+              <div class="toolbar-actions">
+                <button id="rules-expand-all" type="button" class="btn btn-secondary">Buka Semua</button>
+                <button id="rules-collapse-all" type="button" class="btn btn-secondary">Tutup Semua</button>
+              </div>
+            </div>
+            <p class="hint-line">Total rules aktif: <strong id="rules-budget-text">0 / 20.000 token</strong> (<span id="rules-bytes-text">0 KB</span>).</p>
+            <div id="rules-list" class="category-list"></div>
+          </div>
+        </section>
+
+        <section id="panel-mcp" role="tabpanel" aria-labelledby="tab-mcp" hidden="until-found">
+          <div class="panel-inner">
+            <p class="hint-line">Menonaktifkan MCP server global akan memindahkannya ke arsip lokal (kredensial tetap tersimpan aman). Perubahan MCP berlaku pada sesi baru atau setelah refresh MCP Servers.</p>
+            <div id="mcp-list" class="item-card-list"></div>
+          </div>
+        </section>
+
+        <section id="panel-presets" role="tabpanel" aria-labelledby="tab-presets" hidden="until-found">
+          <div class="panel-inner">
+            <p class="hint-line">Terapkan kombinasi kategori skill dan rule sekaligus sesuai kebutuhan kerja Anda.</p>
+            <div id="presets-list" class="preset-grid"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>/*__INLINE_JS__*/</script>
+</body>
+</html>

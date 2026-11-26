@@ -1,0 +1,17 @@
+{
+  "name": "agy-control-center",
+  "displayName": "Control Center",
+  "version": "1.0.0",
+  "description": "Manage Antigravity skills, ECC modules, rules, and MCP servers with per-item, per-category, and preset toggles.",
+  "author": {
+    "name": "Fabrianus",
+    "url": "https://github.com/MrBray20"
+  },
+  "homepage": "https://github.com/MrBray20/agy-control-center",
+  "repository": "https://github.com/MrBray20/agy-control-center",
+  "suggestedPrompts": [
+    "Buka Control Center untuk mengatur skill, rules, dan MCP",
+    "Aktifkan preset Frontend & UI di Control Center",
+    "Cek penggunaan token budget skill Antigravity saat ini"
+  ]
+}

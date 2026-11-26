@@ -1,0 +1,31 @@
+{
+  "name": "agy-control-center",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Antigravity Control Center for managing skills, rules, and MCP servers.",
+  "repository": "https://github.com/MrBray20/agy-control-center",
+  "bin": {
+    "agy-manager": "./bin/web-server.mjs"
+  },
+  "files": [
+    "plugin.json",
+    "mcp_config.json",
+    "bin",
+    "lib",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build-ui.mjs",
+    "web": "node bin/web-server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "latest",
+    "@modelcontextprotocol/sdk": "latest"
+  },
+  "devDependencies": {
+    "esbuild": "latest"
+  }
+}

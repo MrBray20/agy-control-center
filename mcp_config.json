@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agy-control-center": {
+      "command": "node",
+      "args": ["${PLUGIN_ROOT}/dist/mcp-server.mjs"]
+    }
+  }
+}
