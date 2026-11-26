@@ -17,7 +17,8 @@ Dashboard kontrol terpadu untuk mengelola **Skills**, **Rules**, dan **MCP Serve
 - **MCP Servers:**
   - Toggle server MCP global di `~/.gemini/config/mcp_config.json`. Entri yang dinonaktifkan diarsipkan ke `mcp_config.disabled.json` dengan izin file `0600`, serta menyamarkan API key atau token di tampilan UI.
 - **Presets:**
-  - Preset satu klik: **Hemat Token**, **Frontend & UI**, dan **Full-Stack ECC**.
+  - **Preset bawaan adaptif:** preset universal (**Hemat Token**, **Aktifkan Semua Manual**) selalu tersedia untuk semua pengguna, sedangkan preset khusus ECC (**Frontend & UI**, **Full-Stack ECC**) otomatis muncul jika ECC terpasang.
+  - **Custom presets:** simpan kondisi toggle Skills, Rules, dan (opsional) MCP Servers saat ini sebagai preset bernama, terapkan ulang dengan satu klik, atau hapus kapan saja.
 
 ## Instalasi
 
@@ -43,7 +44,7 @@ Windows (PowerShell):
 git clone --depth 1 https://github.com/MrBray20/agy-control-center.git "$env:USERPROFILE\.gemini\config\plugins\agy-control-center"
 ```
 
-Untuk mengunci ke versi rilis tertentu (alih-alih branch `main` terbaru), tambahkan `--branch v1.0.0` pada perintah `git clone`.
+Untuk mengunci ke versi rilis tertentu (alih-alih branch `main` terbaru), tambahkan `--branch v1.1.0` pada perintah `git clone`.
 
 Setelah terpasang, buka **Control Center** langsung dari **Sidebar kiri** atau menu **`+` di Side Pane** Antigravity.
 

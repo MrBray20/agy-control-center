@@ -18,6 +18,8 @@ import {
   toggleRuleCategory,
   toggleMcp,
   applyPreset,
+  saveCustomPreset,
+  deleteCustomPreset,
 } from '../lib/manager.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -27,7 +29,7 @@ const APP_ONLY = { ui: { visibility: ['app'] } };
 
 const server = new McpServer({
   name: 'agy-control-center',
-  version: '1.0.0',
+  version: '1.1.0',
 });
 
 registerAppResource(
@@ -212,6 +214,36 @@ registerAppTool(
     _meta: APP_ONLY,
   },
   wrapAction(({ presetId }) => applyPreset(presetId))
+);
+
+registerAppTool(
+  server,
+  'cc_save_preset',
+  {
+    title: 'Save Custom Preset',
+    description: 'Save current toggles as a reusable custom preset.',
+    inputSchema: z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      includeMcp: z.boolean().optional(),
+    }),
+    _meta: APP_ONLY,
+  },
+  wrapAction(({ name, description, includeMcp }) => saveCustomPreset(name, description, includeMcp))
+);
+
+registerAppTool(
+  server,
+  'cc_delete_preset',
+  {
+    title: 'Delete Custom Preset',
+    description: 'Delete a saved custom preset by ID.',
+    inputSchema: z.object({
+      presetId: z.string(),
+    }),
+    _meta: APP_ONLY,
+  },
+  wrapAction(({ presetId }) => deleteCustomPreset(presetId))
 );
 
 const transport = new StdioServerTransport();

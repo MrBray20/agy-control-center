@@ -11,6 +11,8 @@ import {
   toggleRuleCategory,
   toggleMcp,
   applyPreset,
+  saveCustomPreset,
+  deleteCustomPreset,
 } from '../lib/manager.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -130,6 +132,14 @@ const server = http.createServer(async (req, res) => {
       }
       if (urlPath === '/api/preset/apply') {
         sendJson(res, 200, applyPreset(body.presetId));
+        return;
+      }
+      if (urlPath === '/api/preset/save') {
+        sendJson(res, 200, saveCustomPreset(body.name, body.description, body.includeMcp));
+        return;
+      }
+      if (urlPath === '/api/preset/delete') {
+        sendJson(res, 200, deleteCustomPreset(body.presetId));
         return;
       }
     }

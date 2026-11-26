@@ -17,7 +17,8 @@ A unified control dashboard for managing **Skills**, **Rules**, and **MCP Server
 - **MCP Servers:**
   - Toggle global MCP servers in `~/.gemini/config/mcp_config.json`. Disabled entries are archived to `mcp_config.disabled.json` with `0600` file permissions, and API keys or tokens are masked in the UI.
 - **Presets:**
-  - One-click presets: **Hemat Token** (token-saver), **Frontend & UI**, and **Full-Stack ECC**.
+  - **Adaptive built-in presets:** universal presets (**Hemat Token**, **Aktifkan Semua Manual**) are always available, while ECC-specific presets (**Frontend & UI**, **Full-Stack ECC**) appear automatically when ECC is installed.
+  - **Custom presets:** save your active Skills, Rules, and optional MCP Server toggle state as named presets, reapply them in one click, or delete them anytime.
 
 ## Installation
 
@@ -43,7 +44,7 @@ Windows (PowerShell):
 git clone --depth 1 https://github.com/MrBray20/agy-control-center.git "$env:USERPROFILE\.gemini\config\plugins\agy-control-center"
 ```
 
-To pin a specific release tag instead of the latest `main` branch, add `--branch v1.0.0` to the `git clone` command.
+To pin a specific release tag instead of the latest `main` branch, add `--branch v1.1.0` to the `git clone` command.
 
 Once installed, open **Control Center** from the **left sidebar** or the **`+` menu in the Side Pane**.
 

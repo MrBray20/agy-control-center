@@ -36687,6 +36687,7 @@ var GEMINI_RULES_DISABLED = path.join(GEMINI_CONFIG, "rules.disabled");
 var GEMINI_PLUGINS = path.join(GEMINI_CONFIG, "plugins");
 var MCP_CONFIG = path.join(GEMINI_CONFIG, "mcp_config.json");
 var MCP_DISABLED = path.join(GEMINI_CONFIG, "mcp_config.disabled.json");
+var PRESETS_FILE = path.join(GEMINI_CONFIG, "control-center-presets.json");
 var AGENTS_DIR = path.join(HOME, ".agents");
 var AGENTS_SKILLS = path.join(AGENTS_DIR, "skills");
 var AGENTS_SKILLS_DISABLED = path.join(AGENTS_DIR, "skills.disabled");
@@ -36807,26 +36808,51 @@ var DESIGN_SKILL_NAMES = /* @__PURE__ */ new Set([
   "slides",
   "ui-styling"
 ]);
-var PRESETS = [
-  {
-    id: "hemat-token",
-    name: "Hemat Token",
-    description: "Matikan semua skill dan rule ECC; pertahankan skill manual (FigCraft, Design pilihan, dan Tools) tetap aktif.",
-    summary: "ECC OFF, Manual Skills ON"
-  },
-  {
-    id: "frontend-ui",
-    name: "Frontend & UI",
-    description: "Aktifkan ECC Frontend & UI, FigCraft, Design & UI/UX, serta ECC Rules Common dan TypeScript.",
-    summary: "ECC Frontend + Design + FigCraft + Rules Common/TS"
-  },
-  {
-    id: "fullstack-ecc",
-    name: "Full-Stack ECC",
-    description: "Aktifkan seluruh kategori skill ECC (Metodologi, Frontend, Backend, Database, Security, AI) dan ECC Rules Common.",
-    summary: "Semua ECC Skills + ECC Rules Common"
+function buildBuiltInPresets(skillCategories, ruleCategories) {
+  const hasEcc = skillCategories.some((c) => c.id.startsWith("ecc-")) || ruleCategories.some((c) => c.id.startsWith("ecc-rules-"));
+  const presets = [
+    {
+      id: "minimal",
+      name: "Hemat Token",
+      description: hasEcc ? "Matikan semua skill dan rule ECC; pertahankan skill manual (FigCraft dan Tools) tetap aktif." : "Matikan semua skill dan rule opsional untuk meminimalkan penggunaan token.",
+      summary: hasEcc ? "ECC OFF, Manual Skills ON" : "Semua Skill & Rule Opsional OFF",
+      isCustom: false
+    },
+    {
+      id: "enable-all-manual",
+      name: "Aktifkan Semua Manual",
+      description: "Aktifkan seluruh skill manual dan global rules yang tersedia di komputer Anda.",
+      summary: "Manual Skills ON, Global Rules ON",
+      isCustom: false
+    }
+  ];
+  if (hasEcc) {
+    presets.push(
+      {
+        id: "frontend-ui",
+        name: "Frontend & UI",
+        description: "Aktifkan ECC Frontend & UI, FigCraft, Design & UI/UX, serta ECC Rules Common dan TypeScript.",
+        summary: "ECC Frontend + Design + FigCraft + Rules Common/TS",
+        isCustom: false
+      },
+      {
+        id: "fullstack-ecc",
+        name: "Full-Stack ECC",
+        description: "Aktifkan seluruh kategori skill ECC (Metodologi, Frontend, Backend, Database, Security, AI) dan ECC Rules Common.",
+        summary: "Semua ECC Skills + ECC Rules Common",
+        isCustom: false
+      }
+    );
   }
-];
+  return { hasEcc, presets };
+}
+function readCustomPresets() {
+  const raw = readJsonSafe(PRESETS_FILE, { presets: [] });
+  return Array.isArray(raw.presets) ? raw.presets : [];
+}
+function writeCustomPresets(list) {
+  writeJsonSafe(PRESETS_FILE, { presets: list });
+}
 function normalizePath(p) {
   return path.resolve(p).replace(/\\/g, "/").replace(/\/+$/, "");
 }
@@ -37424,6 +37450,16 @@ function getState() {
   const { skills, categories: skillCategories } = collectSkills();
   const { rules, categories: ruleCategories } = collectRules();
   const mcpServers = collectMcpServers();
+  const { hasEcc, presets } = buildBuiltInPresets(skillCategories, ruleCategories);
+  const customPresets = readCustomPresets().map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description || "Preset kustom tersimpan.",
+    summary: p.summary || "",
+    includesMcp: Boolean(p.includesMcp),
+    createdAt: p.createdAt || null,
+    isCustom: true
+  }));
   const activeSkills = skills.filter((s) => s.enabled);
   const activeSkillTokens = activeSkills.reduce((sum, s) => sum + s.tokens, 0);
   const activeRules = rules.filter((r) => r.enabled);
@@ -37444,12 +37480,14 @@ function getState() {
       ruleBudgetLimit: RULE_BUDGET_LIMIT,
       activeMcpCount,
       totalMcpCount: mcpServers.length,
-      eccSkillsRegistered: isSkillsJsonRegistered()
+      eccSkillsRegistered: isSkillsJsonRegistered(),
+      hasEcc
     },
     skillCategories,
     ruleCategories,
     mcpServers,
-    presets: PRESETS
+    presets,
+    customPresets
   };
 }
 function syncEccDiscovery() {
@@ -37667,21 +37705,138 @@ function toggleMcp(name, enabled) {
   writeJsonSafe(MCP_DISABLED, disabledCfg, 384);
   return getState();
 }
+function saveCustomPreset(name, description = "", includeMcp = false) {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) {
+    throw new Error("Nama preset tidak boleh kosong.");
+  }
+  if (cleanName.length > 60) {
+    throw new Error("Nama preset maksimal 60 karakter.");
+  }
+  const cleanDesc = String(description || "").trim().slice(0, 140);
+  const { skills } = collectSkills();
+  const { rules } = collectRules();
+  const mcpServers = collectMcpServers();
+  const skillsSnap = {};
+  let activeSkillCount = 0;
+  for (const s of skills) {
+    if (!s.toggleable) continue;
+    skillsSnap[s.id] = Boolean(s.enabled);
+    if (s.enabled) activeSkillCount++;
+  }
+  const rulesSnap = {};
+  let activeRuleCount = 0;
+  for (const r of rules) {
+    if (!r.toggleable) continue;
+    rulesSnap[r.id] = Boolean(r.enabled);
+    if (r.enabled) activeRuleCount++;
+  }
+  let mcpSnap = null;
+  let activeMcpCount = 0;
+  if (Boolean(includeMcp)) {
+    mcpSnap = {};
+    for (const m of mcpServers) {
+      if (!m.toggleable) continue;
+      mcpSnap[m.name] = Boolean(m.enabled);
+      if (m.enabled) activeMcpCount++;
+    }
+  }
+  const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "preset";
+  const id = `custom-${slug}-${Date.now().toString(36)}`;
+  const summary = `${activeSkillCount} skills, ${activeRuleCount} rules${mcpSnap ? `, ${activeMcpCount} MCP` : ""}`;
+  const list = readCustomPresets();
+  list.push({
+    id,
+    name: cleanName,
+    description: cleanDesc || "Preset kustom tersimpan.",
+    summary,
+    includesMcp: Boolean(mcpSnap),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+    snapshot: {
+      skills: skillsSnap,
+      rules: rulesSnap,
+      mcp: mcpSnap
+    }
+  });
+  writeCustomPresets(list);
+  return getState();
+}
+function deleteCustomPreset(presetId) {
+  const list = readCustomPresets();
+  const next = list.filter((p) => p.id !== presetId);
+  if (next.length === list.length) {
+    throw new Error(`Preset "${presetId}" tidak ditemukan.`);
+  }
+  writeCustomPresets(next);
+  return getState();
+}
 function applyPreset(presetId) {
+  const custom2 = readCustomPresets().find((p) => p.id === presetId);
+  if (custom2 && custom2.snapshot) {
+    const { skills } = collectSkills();
+    const { rules } = collectRules();
+    const skillSnap = custom2.snapshot.skills || {};
+    const ruleSnap = custom2.snapshot.rules || {};
+    let touchedEcc2 = false;
+    for (const skill of skills) {
+      if (!skill.toggleable || !Object.hasOwn(skillSnap, skill.id)) continue;
+      const target = Boolean(skillSnap[skill.id]);
+      if (skill.enabled !== target) {
+        applySingleSkillToggle(skill, target);
+        if (skill.kind === "ecc") touchedEcc2 = true;
+      }
+    }
+    if (touchedEcc2) {
+      syncEccDiscovery();
+    }
+    for (const rule of rules) {
+      if (!rule.toggleable || !Object.hasOwn(ruleSnap, rule.id)) continue;
+      const target = Boolean(ruleSnap[rule.id]);
+      if (rule.enabled !== target) {
+        applySingleRuleToggle(rule, target);
+      }
+    }
+    if (custom2.snapshot.mcp && typeof custom2.snapshot.mcp === "object") {
+      const mcpServers = collectMcpServers();
+      for (const srv of mcpServers) {
+        if (!srv.toggleable || !Object.hasOwn(custom2.snapshot.mcp, srv.name)) continue;
+        const target = Boolean(custom2.snapshot.mcp[srv.name]);
+        if (srv.enabled !== target) {
+          toggleMcp(srv.name, target);
+        }
+      }
+    }
+    return getState();
+  }
   const { categories: skillCats } = collectSkills();
   const { categories: ruleCats } = collectRules();
+  const hasEcc = skillCats.some((c) => c.id.startsWith("ecc-")) || ruleCats.some((c) => c.id.startsWith("ecc-rules-"));
   const eccSkillCatIds = skillCats.filter((c) => c.id.startsWith("ecc-")).map((c) => c.id);
   const eccRuleCatIds = ruleCats.filter((c) => c.id.startsWith("ecc-rules-")).map((c) => c.id);
+  const manualSkillCatIds = skillCats.filter((c) => c.id.startsWith("manual-")).map((c) => c.id);
   const enableSkillCats = /* @__PURE__ */ new Set();
   const disableSkillCats = /* @__PURE__ */ new Set();
   const enableRuleCats = /* @__PURE__ */ new Set();
   const disableRuleCats = /* @__PURE__ */ new Set();
-  if (presetId === "hemat-token") {
-    for (const id of eccSkillCatIds) disableSkillCats.add(id);
-    for (const id of eccRuleCatIds) disableRuleCats.add(id);
-    enableSkillCats.add("manual-figcraft");
-    enableSkillCats.add("manual-tools");
+  if (presetId === "minimal" || presetId === "hemat-token") {
+    if (hasEcc) {
+      for (const id of eccSkillCatIds) disableSkillCats.add(id);
+      for (const id of eccRuleCatIds) disableRuleCats.add(id);
+      enableSkillCats.add("manual-figcraft");
+      enableSkillCats.add("manual-tools");
+    } else {
+      for (const c of skillCats) {
+        if (c.toggleable) disableSkillCats.add(c.id);
+      }
+      for (const c of ruleCats) {
+        if (c.toggleable) disableRuleCats.add(c.id);
+      }
+    }
+  } else if (presetId === "enable-all-manual") {
+    for (const id of manualSkillCatIds) enableSkillCats.add(id);
+    enableRuleCats.add("rules-global");
   } else if (presetId === "frontend-ui") {
+    if (!hasEcc) throw new Error('Preset "frontend-ui" memerlukan komponen ECC.');
     for (const id of eccSkillCatIds) {
       if (id === "ecc-frontend") enableSkillCats.add(id);
       else disableSkillCats.add(id);
@@ -37693,6 +37848,7 @@ function applyPreset(presetId) {
       else disableRuleCats.add(id);
     }
   } else if (presetId === "fullstack-ecc") {
+    if (!hasEcc) throw new Error('Preset "fullstack-ecc" memerlukan komponen ECC.');
     for (const id of eccSkillCatIds) {
       if (id !== "ecc-other") enableSkillCats.add(id);
     }
@@ -37703,6 +37859,7 @@ function applyPreset(presetId) {
   } else {
     throw new Error(`Preset "${presetId}" tidak dikenal.`);
   }
+  let touchedEcc = false;
   for (const cat of skillCats) {
     if (!cat.toggleable) continue;
     const targetState = enableSkillCats.has(cat.id) ? true : disableSkillCats.has(cat.id) ? false : null;
@@ -37710,9 +37867,12 @@ function applyPreset(presetId) {
     for (const item of cat.items) {
       if (!item.toggleable || item.enabled === targetState) continue;
       applySingleSkillToggle(item, targetState);
+      if (item.kind === "ecc") touchedEcc = true;
     }
   }
-  syncEccDiscovery();
+  if (touchedEcc || hasEcc || fs.existsSync(ECC_STATE)) {
+    syncEccDiscovery();
+  }
   for (const cat of ruleCats) {
     if (!cat.toggleable) continue;
     const targetState = enableRuleCats.has(cat.id) ? true : disableRuleCats.has(cat.id) ? false : null;
@@ -37732,7 +37892,7 @@ var APP_URI = "ui://control-center/app.html";
 var APP_ONLY = { ui: { visibility: ["app"] } };
 var server = new McpServer({
   name: "agy-control-center",
-  version: "1.0.0"
+  version: "1.1.0"
 });
 G(
   server,
@@ -37906,6 +38066,34 @@ j(
     _meta: APP_ONLY
   },
   wrapAction(({ presetId }) => applyPreset(presetId))
+);
+j(
+  server,
+  "cc_save_preset",
+  {
+    title: "Save Custom Preset",
+    description: "Save current toggles as a reusable custom preset.",
+    inputSchema: external_exports.object({
+      name: external_exports.string(),
+      description: external_exports.string().optional(),
+      includeMcp: external_exports.boolean().optional()
+    }),
+    _meta: APP_ONLY
+  },
+  wrapAction(({ name, description, includeMcp }) => saveCustomPreset(name, description, includeMcp))
+);
+j(
+  server,
+  "cc_delete_preset",
+  {
+    title: "Delete Custom Preset",
+    description: "Delete a saved custom preset by ID.",
+    inputSchema: external_exports.object({
+      presetId: external_exports.string()
+    }),
+    _meta: APP_ONLY
+  },
+  wrapAction(({ presetId }) => deleteCustomPreset(presetId))
 );
 var transport = new StdioServerTransport();
 await server.connect(transport);

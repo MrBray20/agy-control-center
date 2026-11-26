@@ -1,7 +1,7 @@
 {
   "name": "agy-control-center",
   "displayName": "Control Center",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Manage Antigravity skills, ECC modules, rules, and MCP servers with per-item, per-category, and preset toggles.",
   "author": {
     "name": "Fabrianus",

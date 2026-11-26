@@ -183,7 +183,14 @@ describe('Control Center manager', () => {
     assert.deepEqual(afterParsed, JSON.parse(beforeRaw));
   });
 
-  it('applies presets cleanly across skills and rules', () => {
+  it('applies adaptive built-in presets cleanly across skills and rules', () => {
+    const initial = mgr.getState();
+    assert.equal(initial.summary.hasEcc, true);
+    assert.deepEqual(
+      initial.presets.map(p => p.id),
+      ['minimal', 'enable-all-manual', 'frontend-ui', 'fullstack-ecc']
+    );
+
     const fe = mgr.applyPreset('frontend-ui');
     assert.equal(fe.skillCategories.find(c => c.id === 'ecc-frontend').activeCount, 1);
     assert.equal(fe.skillCategories.find(c => c.id === 'ecc-database').activeCount, 0);
@@ -197,5 +204,37 @@ describe('Control Center manager', () => {
     assert.equal(ht.summary.eccSkillsRegistered, false);
     assert.equal(ht.skillCategories.find(c => c.id === 'manual-figcraft').activeCount, 1);
     assert.equal(ht.ruleCategories.find(c => c.id === 'ecc-rules-common').activeCount, 0);
+  });
+
+  it('saves, reapplies, and deletes custom presets including MCP state', () => {
+    // Prepare a specific custom state: graphify OFF, rust rule ON, remoteApi MCP OFF
+    mgr.toggleSkill('manual-dir:graphify', false);
+    mgr.toggleRule('ecc-rule:rust-patterns.md', true);
+    mgr.toggleMcp('remoteApi', false);
+
+    const savedState = mgr.saveCustomPreset('Mode Riset', 'Fokus riset tanpa remoteApi', true);
+    assert.equal(savedState.customPresets.length, 1);
+    const custom = savedState.customPresets[0];
+    assert.equal(custom.name, 'Mode Riset');
+    assert.equal(custom.includesMcp, true);
+
+    // Mutate everything differently
+    mgr.toggleSkill('manual-dir:graphify', true);
+    mgr.toggleRule('ecc-rule:rust-patterns.md', false);
+    mgr.toggleMcp('remoteApi', true);
+
+    // Reapply custom preset and verify exact restoration
+    const reapplied = mgr.applyPreset(custom.id);
+    const toolsCat = reapplied.skillCategories.find(c => c.id === 'manual-tools');
+    assert.equal(toolsCat.activeCount, 0);
+    assert.equal(fs.existsSync(path.join(mgr.AGENTS_RULES, 'rust-patterns.md')), true);
+    assert.equal(reapplied.mcpServers.find(m => m.name === 'remoteApi').enabled, false);
+
+    // Restore MCP and delete custom preset
+    mgr.toggleMcp('remoteApi', true);
+    mgr.toggleSkill('manual-dir:graphify', true);
+    mgr.toggleRule('ecc-rule:rust-patterns.md', false);
+    const afterDelete = mgr.deleteCustomPreset(custom.id);
+    assert.equal(afterDelete.customPresets.length, 0);
   });
 });

@@ -137,6 +137,27 @@ describe('MCP & Web servers', () => {
       const r5 = await waitFor(5);
       assert.ok(!r5.result.isError);
       assert.equal(r5.result.structuredContent.summary.activeSkillsCount, 2);
+
+      send({
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: { name: 'cc_save_preset', arguments: { name: 'MCP Test Preset', includeMcp: false } },
+      });
+      const r6 = await waitFor(6);
+      assert.ok(!r6.result.isError);
+      assert.equal(r6.result.structuredContent.customPresets.length, 1);
+      const savedId = r6.result.structuredContent.customPresets[0].id;
+
+      send({
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'tools/call',
+        params: { name: 'cc_delete_preset', arguments: { presetId: savedId } },
+      });
+      const r7 = await waitFor(7);
+      assert.ok(!r7.result.isError);
+      assert.equal(r7.result.structuredContent.customPresets.length, 0);
     } finally {
       proc.kill();
     }
@@ -184,6 +205,24 @@ describe('MCP & Web servers', () => {
       const toggled = await toggleRes.json();
       const toolsCat = toggled.skillCategories.find(c => c.id === 'manual-tools');
       assert.equal(toolsCat.activeCount, 0);
+
+      const saveRes = await fetch(`${baseUrl}/api/preset/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Web Test Preset', description: 'API check', includeMcp: true }),
+      });
+      assert.equal(saveRes.status, 200);
+      const savedJson = await saveRes.json();
+      assert.equal(savedJson.customPresets.length, 1);
+
+      const delRes = await fetch(`${baseUrl}/api/preset/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ presetId: savedJson.customPresets[0].id }),
+      });
+      assert.equal(delRes.status, 200);
+      const deletedJson = await delRes.json();
+      assert.equal(deletedJson.customPresets.length, 0);
     } finally {
       proc.kill();
     }

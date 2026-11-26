@@ -145,7 +145,29 @@
 
         <section id="panel-presets" role="tabpanel" aria-labelledby="tab-presets" hidden="until-found">
           <div class="panel-inner">
-            <p class="hint-line">Terapkan kombinasi kategori skill dan rule sekaligus sesuai kebutuhan kerja Anda.</p>
+            <p class="hint-line">Simpan konfigurasi toggle Anda saat ini sebagai preset kustom atau terapkan preset bawaan.</p>
+            <form id="save-preset-form" class="preset-form-card">
+              <div class="preset-form-grid">
+                <div class="field-group">
+                  <label for="preset-name-input">Nama Preset</label>
+                  <input id="preset-name-input" type="text" class="input-control" maxlength="60" required placeholder="Contoh: Mode Riset">
+                </div>
+                <div class="field-group">
+                  <label for="preset-desc-input">Deskripsi (opsional)</label>
+                  <input id="preset-desc-input" type="text" class="input-control" maxlength="140" placeholder="Catatan singkat kegunaan preset">
+                </div>
+              </div>
+              <div class="preset-form-footer">
+                <label class="checkbox-inline" for="preset-include-mcp">
+                  <input id="preset-include-mcp" type="checkbox">
+                  Sertakan status MCP Servers
+                </label>
+                <button type="submit" id="save-preset-btn" class="btn btn-primary">Simpan Kondisi Saat Ini</button>
+              </div>
+            </form>
+            <h2 class="section-heading">Preset Tersimpan</h2>
+            <div id="custom-presets-list" class="preset-grid"></div>
+            <h2 class="section-heading">Preset Bawaan</h2>
             <div id="presets-list" class="preset-grid"></div>
           </div>
         </section>

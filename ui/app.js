@@ -51,6 +51,12 @@ const els = {
   rulesBytesText: document.getElementById('rules-bytes-text'),
   rulesList: document.getElementById('rules-list'),
   mcpList: document.getElementById('mcp-list'),
+  savePresetForm: document.getElementById('save-preset-form'),
+  presetNameInput: document.getElementById('preset-name-input'),
+  presetDescInput: document.getElementById('preset-desc-input'),
+  presetIncludeMcp: document.getElementById('preset-include-mcp'),
+  savePresetBtn: document.getElementById('save-preset-btn'),
+  customPresetsList: document.getElementById('custom-presets-list'),
   presetsList: document.getElementById('presets-list'),
 };
 
@@ -551,40 +557,90 @@ function renderMcpList() {
   }
 }
 
+function createPresetCard(preset, isCustom) {
+  const card = document.createElement('article');
+  card.className = 'preset-card';
+
+  const top = document.createElement('div');
+  const title = document.createElement('h3');
+  title.style.margin = '0';
+  title.style.fontSize = '1rem';
+  title.textContent = preset.name;
+  const summary = document.createElement('p');
+  summary.className = 'preset-summary';
+  summary.textContent = preset.summary;
+  const desc = document.createElement('p');
+  desc.className = 'preset-desc';
+  desc.textContent = preset.description;
+  top.append(title, summary, desc);
+
+  const actions = document.createElement('div');
+  actions.className = 'preset-actions';
+
+  const applyBtn = document.createElement('button');
+  applyBtn.type = 'button';
+  applyBtn.className = 'btn btn-primary';
+  applyBtn.disabled = isBusy;
+  applyBtn.textContent = isCustom ? 'Terapkan' : 'Terapkan Preset';
+  applyBtn.addEventListener('click', () => {
+    runMutation(
+      'cc_apply_preset',
+      '/api/preset/apply',
+      { presetId: preset.id },
+      `Preset "${preset.name}" berhasil diterapkan.`
+    );
+  });
+  actions.appendChild(applyBtn);
+
+  if (isCustom) {
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn btn-danger';
+    delBtn.disabled = isBusy;
+    delBtn.setAttribute('aria-label', `Hapus preset ${preset.name}`);
+    delBtn.textContent = 'Hapus';
+    delBtn.addEventListener('click', () => {
+      runMutation(
+        'cc_delete_preset',
+        '/api/preset/delete',
+        { presetId: preset.id },
+        `Preset "${preset.name}" dihapus.`
+      );
+    });
+    actions.appendChild(delBtn);
+  }
+
+  card.append(top, actions);
+  return card;
+}
+
 function renderPresets() {
+  els.customPresetsList.replaceChildren();
+  const customPresets = currentState?.customPresets || [];
+  if (customPresets.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'state-box';
+    empty.style.gridColumn = '1 / -1';
+    empty.style.marginTop = '0';
+    const p = document.createElement('p');
+    p.className = 'state-title';
+    p.textContent = 'Belum ada preset tersimpan.';
+    const desc = document.createElement('p');
+    desc.className = 'state-desc';
+    desc.style.marginBottom = '0';
+    desc.textContent = 'Atur toggle Skills, Rules, dan MCP sesuai kebutuhan lalu simpan di formulir di atas.';
+    empty.append(p, desc);
+    els.customPresetsList.appendChild(empty);
+  } else {
+    for (const preset of customPresets) {
+      els.customPresetsList.appendChild(createPresetCard(preset, true));
+    }
+  }
+
   els.presetsList.replaceChildren();
   const presets = currentState?.presets || [];
   for (const preset of presets) {
-    const card = document.createElement('article');
-    card.className = 'preset-card';
-
-    const top = document.createElement('div');
-    const title = document.createElement('h2');
-    title.textContent = preset.name;
-    const summary = document.createElement('p');
-    summary.className = 'preset-summary';
-    summary.textContent = preset.summary;
-    const desc = document.createElement('p');
-    desc.className = 'preset-desc';
-    desc.textContent = preset.description;
-    top.append(title, summary, desc);
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-primary';
-    btn.disabled = isBusy;
-    btn.textContent = 'Terapkan Preset';
-    btn.addEventListener('click', () => {
-      runMutation(
-        'cc_apply_preset',
-        '/api/preset/apply',
-        { presetId: preset.id },
-        `Preset "${preset.name}" berhasil diterapkan.`
-      );
-    });
-
-    card.append(top, btn);
-    els.presetsList.appendChild(card);
+    els.presetsList.appendChild(createPresetCard(preset, false));
   }
 }
 
@@ -653,6 +709,27 @@ function bindControls() {
       collapsedCategories.add(`rule:${cat.id}`);
     }
     renderAll();
+  });
+
+  els.savePresetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = els.presetNameInput.value.trim();
+    const description = els.presetDescInput.value.trim();
+    const includeMcp = els.presetIncludeMcp.checked;
+    if (!name || isBusy) return;
+    els.savePresetBtn.disabled = true;
+    await runMutation(
+      'cc_save_preset',
+      '/api/preset/save',
+      { name, description, includeMcp },
+      `Preset "${name}" berhasil disimpan.`
+    );
+    els.savePresetBtn.disabled = false;
+    if (!els.statusBanner.classList.contains('is-error')) {
+      els.presetNameInput.value = '';
+      els.presetDescInput.value = '';
+      els.presetIncludeMcp.checked = false;
+    }
   });
 }
 
