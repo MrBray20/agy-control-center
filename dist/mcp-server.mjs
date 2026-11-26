@@ -36554,7 +36554,7 @@ var EMPTY_COMPLETION_RESULT = {
 };
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
-import process from "node:process";
+import process2 from "node:process";
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
 var STDIO_DEFAULT_MAX_BUFFER_SIZE = 10 * 1024 * 1024;
@@ -36595,7 +36595,7 @@ function serializeMessage(message) {
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 var StdioServerTransport = class {
-  constructor(_stdin = process.stdin, _stdout = process.stdout, options) {
+  constructor(_stdin = process2.stdin, _stdout = process2.stdout, options) {
     this._stdin = _stdin;
     this._stdout = _stdout;
     this._started = false;
@@ -36677,7 +36677,7 @@ function G(B, Q, F, V, q) {
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-var HOME = os.homedir();
+var HOME = process.env.AGY_CC_HOME || os.homedir();
 var GEMINI_CONFIG = path.join(HOME, ".gemini", "config");
 var GEMINI_SKILLS = path.join(GEMINI_CONFIG, "skills");
 var GEMINI_SKILLS_DISABLED = path.join(GEMINI_CONFIG, "skills.disabled");

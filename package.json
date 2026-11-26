@@ -14,11 +14,13 @@
     "bin",
     "lib",
     "dist",
+    "docs",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "node scripts/build-ui.mjs",
+    "test": "node --test test/*.test.mjs",
     "web": "node bin/web-server.mjs"
   },
   "dependencies": {
