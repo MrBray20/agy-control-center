@@ -23,9 +23,27 @@ A unified control dashboard for managing **Skills**, **Rules**, and **MCP Server
 
 ### 1. As an Antigravity UI Plugin (Zero-Install)
 
+**Option A: Using Antigravity CLI (`agy`)**
+
 ```bash
 agy plugin install https://github.com/MrBray20/agy-control-center
 ```
+
+**Option B: Without `agy` CLI (Antigravity App / IDE via `git clone`)**
+
+macOS / Linux:
+
+```bash
+git clone --depth 1 https://github.com/MrBray20/agy-control-center.git ~/.gemini/config/plugins/agy-control-center
+```
+
+Windows (PowerShell):
+
+```powershell
+git clone --depth 1 https://github.com/MrBray20/agy-control-center.git "$env:USERPROFILE\.gemini\config\plugins\agy-control-center"
+```
+
+To pin a specific release tag instead of the latest `main` branch, add `--branch v1.0.0` to the `git clone` command.
 
 Once installed, open **Control Center** from the **left sidebar** or the **`+` menu in the Side Pane**.
 

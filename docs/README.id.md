@@ -23,9 +23,27 @@ Dashboard kontrol terpadu untuk mengelola **Skills**, **Rules**, dan **MCP Serve
 
 ### 1. Sebagai Antigravity UI Plugin (Tanpa `npm install`)
 
+**Opsi A: Menggunakan Antigravity CLI (`agy`)**
+
 ```bash
 agy plugin install https://github.com/MrBray20/agy-control-center
 ```
+
+**Opsi B: Tanpa `agy` CLI (Antigravity App / IDE melalui `git clone`)**
+
+macOS / Linux:
+
+```bash
+git clone --depth 1 https://github.com/MrBray20/agy-control-center.git ~/.gemini/config/plugins/agy-control-center
+```
+
+Windows (PowerShell):
+
+```powershell
+git clone --depth 1 https://github.com/MrBray20/agy-control-center.git "$env:USERPROFILE\.gemini\config\plugins\agy-control-center"
+```
+
+Untuk mengunci ke versi rilis tertentu (alih-alih branch `main` terbaru), tambahkan `--branch v1.0.0` pada perintah `git clone`.
 
 Setelah terpasang, buka **Control Center** langsung dari **Sidebar kiri** atau menu **`+` di Side Pane** Antigravity.
 
